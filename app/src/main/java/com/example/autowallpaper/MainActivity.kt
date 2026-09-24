@@ -80,29 +80,43 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun changeNow() {
-        binding.btnNow.isEnabled = false
-        binding.btnNow.setText(R.string.loading)
+        withContext(Dispatchers.Main) {
+            binding.btnNow.isEnabled = false
+            binding.btnNow.setText(R.string.loading)
+        }
+        
         try {
             val imageUrl = WallpaperFetcher.fetchImageUrl(this, prefs)
             if (imageUrl == null) {
-                Toast.makeText(this, R.string.fetch_failed, Toast.LENGTH_SHORT).show()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, R.string.fetch_failed, Toast.LENGTH_SHORT).show()
+                }
                 return
             }
 
             val file = WallpaperFetcher.downloadImage(imageUrl, this)
             if (file == null) {
-                Toast.makeText(this, R.string.download_failed, Toast.LENGTH_SHORT).show()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, R.string.download_failed, Toast.LENGTH_SHORT).show()
+                }
                 return
             }
 
             val ok = WallpaperApplier.applyFile(this, file, prefs.lockScreen)
-            if (ok) {
-                prefs.lastImageUrl = imageUrl
-                prefs.lastAppliedAt = System.currentTimeMillis()
-                loadPrefsToUi()
-                Toast.makeText(this, R.string.apply_ok, Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, R.string.apply_failed, Toast.LENGTH_SHORT).show()
+            withContext(Dispatchers.Main) {
+                if (ok) {
+                    prefs.lastImageUrl = imageUrl
+                    prefs.lastAppliedAt = System.currentTimeMillis()
+                    loadPrefsToUi()
+                    Toast.makeText(this@MainActivity, R.string.apply_ok, Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@MainActivity, R.string.apply_failed, Toast.LENGTH_SHORT).show()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(this@MainActivity, "错误: ${e.message}", Toast.LENGTH_LONG).show()
             }
         } finally {
             withContext(Dispatchers.Main) {

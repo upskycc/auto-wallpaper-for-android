@@ -1,9 +1,13 @@
 package com.example.autowallpaper
 
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.autowallpaper.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
@@ -15,6 +19,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: PrefsManager
 
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            startUnlockService()
+        } else {
+            Toast.makeText(this, "需要通知权限才能运行自动换壁纸服务", Toast.LENGTH_LONG).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -23,6 +37,7 @@ class MainActivity : AppCompatActivity() {
         prefs = PrefsManager(this)
         loadPrefsToUi()
         setupListeners()
+        requestNotificationPermission()
     }
 
     private fun loadPrefsToUi() {
@@ -76,6 +91,29 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnBrowse.setOnClickListener {
             startActivity(Intent(this, BrowseActivity::class.java))
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED
+            ) {
+                startUnlockService()
+            } else {
+                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        } else {
+            startUnlockService()
+        }
+    }
+
+    private fun startUnlockService() {
+        val serviceIntent = Intent(this, UnlockService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
         }
     }
 

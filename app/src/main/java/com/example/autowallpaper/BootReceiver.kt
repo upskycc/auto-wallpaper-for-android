@@ -3,16 +3,22 @@ package com.example.autowallpaper
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 
 /**
- * 开机自启接收器（空实现，主要是确保 App 被系统拉起后，
- * 动态注册的解锁接收器能正常工作）。
- *
- * 注意：Android 8.0+ 静态注册的 SCREEN_OFF / USER_PRESENT 广播仍然
- * 可以正常接收，不需要动态注册。
+ * 开机自启接收器
+ * 开机后自动启动前台服务
  */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        // 开机时什么也不做，等待用户下次解锁
+        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
+            // 启动前台服务
+            val serviceIntent = Intent(context, UnlockService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+        }
     }
 }

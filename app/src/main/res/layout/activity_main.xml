@@ -104,6 +104,23 @@
             android:textSize="13sp"
             android:textColor="#666666" />
 
+        <!-- 解锁触发诊断（用于确认广播是否到达） -->
+        <TextView
+            android:id="@+id/tvUnlockInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="13sp"
+            android:textColor="#666666" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/vivo_tip"
+            android:textSize="12sp"
+            android:textColor="#999999"
+            android:layout_marginTop="12dp" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"

@@ -21,11 +21,16 @@ class UnlockReceiver : BroadcastReceiver() {
 
         if (action != Intent.ACTION_USER_PRESENT) return
 
+        val prefs = PrefsManager(context)
+
+        // 诊断计数：无论后续条件如何，只要广播到达就记录
+        prefs.unlockCount = prefs.unlockCount + 1
+        prefs.lastUnlockAt = System.currentTimeMillis()
+
         // 检查屏幕是否真的亮着
         val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         if (!pm.isInteractive) return
 
-        val prefs = PrefsManager(context)
         if (!prefs.enabled) return
 
         // 最小间隔检查

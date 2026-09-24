@@ -43,6 +43,22 @@ class MainActivity : AppCompatActivity() {
         } else {
             getString(R.string.never)
         }
+
+        // 解锁触发诊断信息
+        val unlockTime = if (prefs.lastUnlockAt > 0) {
+            java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+                .format(java.util.Date(prefs.lastUnlockAt))
+        } else {
+            getString(R.string.never)
+        }
+        binding.tvUnlockInfo.text =
+            getString(R.string.unlock_info_fmt, prefs.unlockCount, unlockTime)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 每次回到界面刷新诊断计数
+        loadPrefsToUi()
     }
 
     private fun setupListeners() {

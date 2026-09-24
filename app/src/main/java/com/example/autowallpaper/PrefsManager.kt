@@ -56,6 +56,16 @@ class PrefsManager(context: Context) {
         get() = prefs.getBoolean(KEY_LOCK, true)
         set(v) = prefs.edit().putBoolean(KEY_LOCK, v).apply()
 
+    /** 解锁广播触发次数（诊断用：确认接收器是否工作） */
+    var unlockCount: Int
+        get() = prefs.getInt(KEY_UNLOCK_COUNT, 0)
+        set(v) = prefs.edit().putInt(KEY_UNLOCK_COUNT, v).apply()
+
+    /** 最近一次解锁广播触发时间 */
+    var lastUnlockAt: Long
+        get() = prefs.getLong(KEY_LAST_UNLOCK, 0L)
+        set(v) = prefs.edit().putLong(KEY_LAST_UNLOCK, v).apply()
+
     companion object {
         private const val NAME = "auto_wallpaper_prefs"
         private const val DEFAULT_URL = "https://wp.upx8.com/api.php?resolution={w}x{h}"
@@ -68,5 +78,7 @@ class PrefsManager(context: Context) {
         private const val KEY_LAST_APPLIED = "last_applied"
         private const val KEY_LAST_URL = "last_url"
         private const val KEY_LOCK = "lock_screen"
+        private const val KEY_UNLOCK_COUNT = "unlock_count"
+        private const val KEY_LAST_UNLOCK = "last_unlock"
     }
 }

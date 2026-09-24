@@ -3,7 +3,7 @@ name: Build Android APK
 on:
   push:
     branches: [main, master]
-  workflow_dispatch:          # Actions 页面点 Run workflow 手动触发
+  workflow_dispatch:
 
 jobs:
   build:
@@ -20,17 +20,15 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          api-levels: 34
-          build-tools: 34.0.0
-          cmdline-tools: 11076708
+      # ubuntu-latest 自带 Android SDK，直接用
+      - name: Accept Android licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Set Gradle User Home to a cached path
+      - name: Set Gradle User Home
         run: echo "GRADLE_USER_HOME=$HOME/.gradle" >> $GITHUB_ENV
 
-      # 自动下载缺失的 gradle-wrapper.jar（官方仓库）
+      # 自动下载缺失的 gradle-wrapper.jar
       - name: Download gradle-wrapper.jar if missing
         run: |
           if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then

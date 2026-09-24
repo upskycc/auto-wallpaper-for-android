@@ -1,0 +1,22 @@
+# Gradle
+.gradle/
+build/
+app/build/
+
+# 本地配置（每个人的 SDK 路径不同）
+local.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# 缓存
+*.log
+.DS_Store
+
+# 产物
+*.apk
+*.aab
+*.keystore

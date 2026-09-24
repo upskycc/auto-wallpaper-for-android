@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">自动壁纸</string>
+
+    <!-- Main -->
+    <string name="enable_auto">启用自动更换</string>
+    <string name="set_lock_screen">同时设置锁屏壁纸 (Android 7.0+)</string>
+    <string name="api_url">壁纸接口地址</string>
+    <string name="api_url_hint">支持 {w} {h} 占位符</string>
+    <string name="fetch_mode">接口模式</string>
+    <string name="json_path">JSON 路径</string>
+    <string name="json_path_hint">如 data.url 或 data[0].url</string>
+    <string name="last_applied">上次切换：</string>
+    <string name="never">从未</string>
+    <string name="save">保存设置</string>
+    <string name="change_now">立即换一张</string>
+    <string name="browse_6">浏览 6 张图</string>
+    <string name="saved">已保存</string>
+    <string name="fetch_failed">获取图片失败</string>
+    <string name="download_failed">下载失败</string>
+    <string name="apply_ok">壁纸已更新</string>
+    <string name="apply_failed">设置壁纸失败</string>
+    <string name="loading">加载中…</string>
+
+    <!-- Browse -->
+    <string name="browse_title">选择壁纸</string>
+
+    <!-- Spinner entries -->
+    <string-array name="mode_entries">
+        <item>302 重定向 (直接返回图片)</item>
+        <item>返回 JSON，自行提取 URL</item>
+    </string-array>
+</resources>

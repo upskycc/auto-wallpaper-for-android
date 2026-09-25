@@ -4,18 +4,17 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Android 8.0 以下兜底：深色底 + 极简山景 -->
-    <path
-        android:fillColor="@color/icon_bg"
-        android:pathData="M0,0h108v108H0z" />
+    <!-- 前景：极简白色相框山景标记（适配安全区 21~87） -->
     <path
         android:pathData="M34,40 h40 a4,4 0 0 1 4,4 v24 a4,4 0 0 1 -4,4 h-40 a4,4 0 0 1 -4,-4 v-24 a4,4 0 0 1 4,-4 z"
         android:strokeColor="#FFFFFF"
         android:strokeWidth="2.5"
         android:fillColor="#00000000" />
+    <!-- 太阳 -->
     <path
         android:fillColor="#FFFFFF"
         android:pathData="M64,48 m-3,0 a3,3 0 1 0 6,0 a3,3 0 1 0 -6,0" />
+    <!-- 山 -->
     <path
         android:pathData="M38,66 L50,50 L58,60 M54,66 L62,56 L72,66"
         android:strokeColor="#FFFFFF"

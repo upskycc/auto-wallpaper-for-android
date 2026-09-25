@@ -35,18 +35,20 @@ object WallpaperApplier {
             val bitmap = BitmapFactory.decodeFile(file.absolutePath)
                 ?: return@withContext false
 
-            // 裁剪为屏幕比例并锁定壁纸尺寸为屏幕大小
-            // 避免左右滑动桌面时壁纸跟着滚动、显示不全
+            // 先居中裁剪成屏幕比例，再缩放为屏幕精确尺寸
+            // 壁纸尺寸 == 屏幕尺寸，桌面滑动时壁纸不再滚动、也不会显示不全
+            // 注：suggestDesiredDimensions 需要系统权限（SET_WALLPAPER_HINTS），第三方应用不可用
             val dm: DisplayMetrics = context.resources.displayMetrics
             val screenW = dm.widthPixels
             val screenH = dm.heightPixels
             val cropped = centerCrop(bitmap, screenW, screenH)
+            val sized = if (cropped.width == screenW && cropped.height == screenH) {
+                cropped
+            } else {
+                Bitmap.createScaledBitmap(cropped, screenW, screenH, true)
+            }
 
             try {
-                // 锁定期望尺寸为屏幕大小，避免桌面滑动时壁纸跟着滚动
-                @Suppress("DEPRECATION")
-                wm.suggestDesiredDimensions(screenW, screenH)
-
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     // Android 7.0+：可以分别设置主屏和锁屏
                     val flags = if (lockScreen) {
@@ -54,17 +56,17 @@ object WallpaperApplier {
                     } else {
                         WallpaperManager.FLAG_SYSTEM
                     }
-                    wm.setBitmap(cropped, null, true, flags)
+                    wm.setBitmap(sized, null, true, flags)
                 } else {
                     // Android 7.0 以下：只能设主屏
-                    wm.setBitmap(cropped)
+                    wm.setBitmap(sized)
                 }
                 true
-            } catch (_: SecurityException) {
-                // 极少量设备需要权限，一般不会
+            } catch (_: Exception) {
                 false
             } finally {
-                if (cropped !== bitmap) cropped.recycle()
+                if (sized !== bitmap) sized.recycle()
+                if (cropped !== bitmap && cropped !== sized) cropped.recycle()
             }
         }
 

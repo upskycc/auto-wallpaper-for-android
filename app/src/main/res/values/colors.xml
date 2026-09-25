@@ -8,6 +8,6 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- 图标透明色 -->
-    <color name="ic_launcher_transparent">#00000000</color>
+    <!-- 图标底色：深灰 -->
+    <color name="icon_bg">#FF1A1A1A</color>
 </resources>

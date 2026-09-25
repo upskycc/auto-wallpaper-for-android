@@ -10,9 +10,10 @@ import kotlinx.coroutines.launch
 
 /**
  * 解锁广播接收器
- * 
- * 静态注册，按需唤醒，省电
- * SCREEN_OFF 和 USER_PRESENT 是系统允许静态注册的特殊广播
+ *
+ * 注意：Android 8.0+ 静态注册收不到 USER_PRESENT（系统白名单限制）
+ * 所以同时在 WallpaperApp 中动态注册了本接收器，进程存活期间可触发。
+ * 主要的自动更换靠 WorkManager 定时任务兜底。
  */
 class UnlockReceiver : BroadcastReceiver() {
 
@@ -27,7 +28,6 @@ class UnlockReceiver : BroadcastReceiver() {
         prefs.unlockCount = prefs.unlockCount + 1
         prefs.lastUnlockAt = System.currentTimeMillis()
 
-        // 检查屏幕是否真的亮着
         val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         if (!pm.isInteractive) return
 
@@ -39,30 +39,14 @@ class UnlockReceiver : BroadcastReceiver() {
             return
         }
 
-        // 异步执行换壁纸
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                doChange(context, prefs)
+                WallpaperChanger.change(context)
             } catch (_: Exception) {
             } finally {
                 pending.finish()
             }
-        }
-    }
-
-    private suspend fun doChange(context: Context, prefs: PrefsManager) {
-        val imageUrl = WallpaperFetcher.fetchImageUrl(context, prefs) ?: return
-
-        // 避免连续换同一张
-        if (imageUrl == prefs.lastImageUrl) return
-
-        val file = WallpaperFetcher.downloadImage(imageUrl, context) ?: return
-        val ok = WallpaperApplier.applyFile(context, file, prefs.lockScreen)
-
-        if (ok) {
-            prefs.lastImageUrl = imageUrl
-            prefs.lastAppliedAt = System.currentTimeMillis()
         }
     }
 }

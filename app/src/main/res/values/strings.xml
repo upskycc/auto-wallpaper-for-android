@@ -5,6 +5,8 @@
     <!-- Main -->
     <string name="enable_auto">启用自动更换</string>
     <string name="set_lock_screen">同时设置锁屏壁纸 (Android 7.0+)</string>
+    <string name="periodic_enable">定时自动更换（每6小时，省电）</string>
+    <string name="tile_label">换壁纸</string>
     <string name="api_url">壁纸接口地址</string>
     <string name="api_url_hint">支持 {w} {h} 占位符</string>
     <string name="fetch_mode">接口模式</string>

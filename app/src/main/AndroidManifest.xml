@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
 
     <application
+        android:name=".WallpaperApp"
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
@@ -37,6 +38,18 @@
                 <action android:name="android.intent.action.USER_PRESENT" />
             </intent-filter>
         </receiver>
+
+        <!-- 下拉快捷开关磁贴 -->
+        <service
+            android:name=".ChangeWallpaperTile"
+            android:exported="true"
+            android:label="@string/tile_label"
+            android:icon="@android:drawable/ic_menu_gallery"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
         <!-- 开机自启 -->
         <receiver

@@ -27,6 +27,14 @@
             android:textSize="16sp"
             android:paddingVertical="12dp" />
 
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchPeriodic"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/periodic_enable"
+            android:textSize="16sp"
+            android:paddingVertical="12dp" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"

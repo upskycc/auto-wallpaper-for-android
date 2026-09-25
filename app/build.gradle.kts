@@ -54,4 +54,7 @@ dependencies {
 
     // Glide - 图片加载
     implementation("com.github.bumptech.glide:glide:4.16.0")
+
+    // WorkManager - 系统级定时调度（省电，无常驻进程）
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 }

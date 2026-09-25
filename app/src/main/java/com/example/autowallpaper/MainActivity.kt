@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.work.WorkManager
 import com.example.autowallpaper.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,6 +29,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadPrefsToUi() {
         binding.switchEnable.isChecked = prefs.enabled
         binding.switchLock.isChecked = prefs.lockScreen
+        binding.switchPeriodic.isChecked = prefs.periodicEnabled
         binding.etUrl.setText(prefs.apiUrl)
         binding.spinnerMode.setSelection(
             if (prefs.fetchMode == PrefsManager.FetchMode.REDIRECT) 0 else 1
@@ -61,6 +63,19 @@ class MainActivity : AppCompatActivity() {
         loadPrefsToUi()
     }
 
+    /** 调度 WorkManager 定时换壁纸（系统级调度，省电） */
+    private fun schedulePeriodicWork() {
+        val request = androidx.work.PeriodicWorkRequestBuilder<WallpaperWorker>(
+            prefs.periodicHours, java.util.concurrent.TimeUnit.HOURS
+        ).build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            WallpaperWorker.UNIQUE_WORK,
+            androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
+    }
+
     private fun setupListeners() {
         binding.switchEnable.setOnCheckedChangeListener { _, checked ->
             prefs.enabled = checked
@@ -68,6 +83,16 @@ class MainActivity : AppCompatActivity() {
 
         binding.switchLock.setOnCheckedChangeListener { _, checked ->
             prefs.lockScreen = checked
+        }
+
+        binding.switchPeriodic.setOnCheckedChangeListener { _, checked ->
+            prefs.periodicEnabled = checked
+            if (checked) {
+                schedulePeriodicWork()
+            } else {
+                WorkManager.getInstance(this)
+                    .cancelUniqueWork(WallpaperWorker.UNIQUE_WORK)
+            }
         }
 
         binding.spinnerMode.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {

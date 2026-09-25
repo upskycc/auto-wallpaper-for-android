@@ -35,6 +35,15 @@
             android:textSize="16sp"
             android:paddingVertical="12dp" />
 
+        <EditText
+            android:id="@+id/etInterval"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:hint="@string/interval_hint"
+            android:textSize="14sp"
+            android:layout_marginStart="4dp" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
@@ -54,44 +63,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/api_url_hint"
-            android:inputType="textUri"
-            android:singleLine="true"
-            android:padding="12dp"
-            android:background="@android:drawable/edit_text"
-            android:layout_marginTop="4dp" />
-
-        <!-- 模式 -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/fetch_mode"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:layout_marginTop="16dp" />
-
-        <Spinner
-            android:id="@+id/spinnerMode"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:entries="@array/mode_entries"
-            android:layout_marginTop="4dp" />
-
-        <!-- JSON 路径 -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/json_path"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:layout_marginTop="16dp" />
-
-        <EditText
-            android:id="@+id/etJsonPath"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/json_path_hint"
-            android:inputType="text"
-            android:singleLine="true"
+            android:inputType="textUri|textMultiLine|textNoSuggestions"
+            android:minLines="3"
+            android:gravity="top"
             android:padding="12dp"
             android:background="@android:drawable/edit_text"
             android:layout_marginTop="4dp" />

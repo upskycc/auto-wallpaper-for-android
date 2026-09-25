@@ -24,29 +24,30 @@ object WallpaperFetcher {
         .build()
 
     /**
-     * 根据模式获取最终图片 URL
+     * 根据随机选中的图源获取最终图片 URL
+     * 图源自带模式：jsonPath 为空 = 302 直连；非空 = JSON 提取
      */
     suspend fun fetchImageUrl(context: Context, prefs: PrefsManager): String? =
         withContext(Dispatchers.IO) {
-            val url = resolveUrl(context, prefs.apiUrl)
+            // 多图源：每次随机取一个
+            val source = prefs.randomSource() ?: return@withContext null
+            val url = resolveUrl(context, source.url)
 
-            when (prefs.fetchMode) {
-                PrefsManager.FetchMode.REDIRECT -> {
-                    // 302 模式：OkHttp 跟随重定向后，response.request.url 就是最终图片地址
-                    val req = Request.Builder().url(url).build()
-                    client.newCall(req).execute().use { resp ->
-                        if (!resp.isSuccessful) return@withContext null
-                        resp.body?.close() // 只需要 URL，不需要 body
-                        resp.request.url.toString()
-                    }
+            if (source.jsonPath.isEmpty()) {
+                // 302 模式：OkHttp 跟随重定向后，response.request.url 就是最终图片地址
+                val req = Request.Builder().url(url).build()
+                client.newCall(req).execute().use { resp ->
+                    if (!resp.isSuccessful) return@withContext null
+                    resp.body?.close() // 只需要 URL，不需要 body
+                    resp.request.url.toString()
                 }
-                PrefsManager.FetchMode.JSON -> {
-                    val req = Request.Builder().url(url).build()
-                    client.newCall(req).execute().use { resp ->
-                        if (!resp.isSuccessful) return@withContext null
-                        val json = resp.body?.string() ?: return@withContext null
-                        JsonPathExtractor.extract(json, prefs.jsonPath)
-                    }
+            } else {
+                // JSON 模式：用该图源自己的路径提取
+                val req = Request.Builder().url(url).build()
+                client.newCall(req).execute().use { resp ->
+                    if (!resp.isSuccessful) return@withContext null
+                    val json = resp.body?.string() ?: return@withContext null
+                    JsonPathExtractor.extract(json, source.jsonPath)
                 }
             }
         }

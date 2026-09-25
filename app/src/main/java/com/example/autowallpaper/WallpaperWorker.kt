@@ -13,6 +13,10 @@ class WallpaperWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        val prefs = PrefsManager(applicationContext)
+        // 开关被关闭后不再执行
+        if (!prefs.periodicEnabled) return Result.success()
+
         val ok = WallpaperChanger.change(applicationContext)
         return if (ok) Result.success() else Result.failure()
     }

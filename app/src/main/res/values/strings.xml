@@ -3,12 +3,13 @@
     <string name="app_name">自动壁纸</string>
 
     <!-- Main -->
-    <string name="enable_auto">启用自动更换</string>
+    <string name="enable_auto">解锁时更换壁纸</string>
     <string name="set_lock_screen">同时设置锁屏壁纸 (Android 7.0+)</string>
-    <string name="periodic_enable">定时自动更换（每6小时，省电）</string>
+    <string name="periodic_enable">定时自动更换（省电）</string>
+    <string name="interval_hint">定时更换周期（分钟，最小 15）</string>
     <string name="tile_label">换壁纸</string>
-    <string name="api_url">壁纸接口地址</string>
-    <string name="api_url_hint">支持 {w} {h} 占位符</string>
+    <string name="api_url">壁纸图源（每行一个，随机选用）</string>
+    <string name="api_url_hint">每行一个，302直连只填 URL；JSON接口填 URL|JSON路径，如 https://a.com/api|data.url</string>
     <string name="fetch_mode">接口模式</string>
     <string name="json_path">JSON 路径</string>
     <string name="json_path_hint">如 data.url 或 data[0].url</string>

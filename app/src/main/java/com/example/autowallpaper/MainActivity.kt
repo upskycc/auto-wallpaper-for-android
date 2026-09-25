@@ -30,12 +30,10 @@ class MainActivity : AppCompatActivity() {
         binding.switchEnable.isChecked = prefs.enabled
         binding.switchLock.isChecked = prefs.lockScreen
         binding.switchPeriodic.isChecked = prefs.periodicEnabled
-        binding.etUrl.setText(prefs.apiUrl)
-        binding.spinnerMode.setSelection(
-            if (prefs.fetchMode == PrefsManager.FetchMode.REDIRECT) 0 else 1
-        )
-        binding.etJsonPath.setText(prefs.jsonPath)
-        binding.etJsonPath.isEnabled = prefs.fetchMode == PrefsManager.FetchMode.JSON
+        binding.etUrl.setText(prefs.sourcesToText())
+
+        // 定时周期回显（分钟）
+        binding.etInterval.setText(prefs.periodicMinutes.toString())
 
         // 上次切换时间展示
         val last = prefs.lastAppliedAt
@@ -66,7 +64,7 @@ class MainActivity : AppCompatActivity() {
     /** 调度 WorkManager 定时换壁纸（系统级调度，省电） */
     private fun schedulePeriodicWork() {
         val request = androidx.work.PeriodicWorkRequestBuilder<WallpaperWorker>(
-            prefs.periodicHours, java.util.concurrent.TimeUnit.HOURS
+            prefs.periodicMinutes, java.util.concurrent.TimeUnit.MINUTES
         ).build()
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
@@ -74,6 +72,15 @@ class MainActivity : AppCompatActivity() {
             androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
             request
         )
+    }
+
+    /** 保存输入框中的定时周期（分钟），并在开启定时的情况下重新调度 */
+    private fun saveIntervalAndReschedule() {
+        val inputMinutes = binding.etInterval.text.toString().trim().toLongOrNull()
+        prefs.periodicMinutes = inputMinutes ?: 360L
+        if (prefs.periodicEnabled) {
+            schedulePeriodicWork()
+        }
     }
 
     private fun setupListeners() {
@@ -88,30 +95,23 @@ class MainActivity : AppCompatActivity() {
         binding.switchPeriodic.setOnCheckedChangeListener { _, checked ->
             prefs.periodicEnabled = checked
             if (checked) {
-                schedulePeriodicWork()
+                // 先读输入框里的周期再调度
+                saveIntervalAndReschedule()
             } else {
                 WorkManager.getInstance(this)
                     .cancelUniqueWork(WallpaperWorker.UNIQUE_WORK)
             }
         }
 
-        binding.spinnerMode.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(p0: android.widget.AdapterView<*>?, p1: android.view.View?, p2: Int, p3: Long) {
-                prefs.fetchMode = if (p2 == 0) PrefsManager.FetchMode.REDIRECT else PrefsManager.FetchMode.JSON
-                binding.etJsonPath.isEnabled = p2 == 1
-            }
-            override fun onNothingSelected(p0: android.widget.AdapterView<*>?) {}
-        })
-
         binding.btnSave.setOnClickListener {
-            prefs.apiUrl = binding.etUrl.text.toString().trim()
-            prefs.jsonPath = binding.etJsonPath.text.toString().trim().ifBlank { "data.url" }
+            prefs.saveSourcesFromText(binding.etUrl.text.toString())
+            saveIntervalAndReschedule()
             Toast.makeText(this, R.string.saved, Toast.LENGTH_SHORT).show()
         }
 
         binding.btnNow.setOnClickListener {
-            prefs.apiUrl = binding.etUrl.text.toString().trim()
-            prefs.jsonPath = binding.etJsonPath.text.toString().trim().ifBlank { "data.url" }
+            prefs.saveSourcesFromText(binding.etUrl.text.toString())
+            saveIntervalAndReschedule()
             lifecycleScope.launch { changeNow() }
         }
 

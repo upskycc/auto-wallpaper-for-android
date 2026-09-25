@@ -2,22 +2,25 @@ package com.example.autowallpaper
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 /**
- * 配置管理：API地址、解析模式、JSON路径等
+ * 配置管理：图源列表、定时、开关等
  */
 class PrefsManager(context: Context) {
 
     private val prefs: SharedPreferences =
         context.applicationContext.getSharedPreferences(NAME, Context.MODE_PRIVATE)
 
-    enum class FetchMode {
-        /** 302重定向，直接返回图片 */
-        REDIRECT,
-        /** 返回JSON，需要解析URL */
-        JSON
-    }
+    private val gson = Gson()
 
+    /**
+     * 图源：jsonPath 为空 = 302 直连模式；非空 = JSON 模式用该路径提取 URL
+     */
+    data class Source(val url: String, val jsonPath: String)
+
+    /** 解锁时更换壁纸的开关（false = 解锁不触发更换） */
     var enabled: Boolean
         get() = prefs.getBoolean(KEY_ENABLED, true)
         set(v) = prefs.edit().putBoolean(KEY_ENABLED, v).apply()
@@ -27,19 +30,45 @@ class PrefsManager(context: Context) {
         get() = prefs.getLong(KEY_INTERVAL, 0L)
         set(v) = prefs.edit().putLong(KEY_INTERVAL, v).apply()
 
-    /** 壁纸API URL，支持 {w} {h} 占位符 */
-    var apiUrl: String
-        get() = prefs.getString(KEY_URL, DEFAULT_URL)!!
-        set(v) = prefs.edit().putString(KEY_URL, v).apply()
+    /** 图源列表 */
+    var sources: List<Source>
+        get() {
+            val json = prefs.getString(KEY_SOURCES, null)
+            if (json != null) {
+                return try {
+                    gson.fromJson(json, object : TypeToken<List<Source>>() {}.type)
+                } catch (_: Exception) {
+                    emptyList()
+                }
+            }
+            // 迁移旧版单图源/换行分隔配置（全部按 302 直连处理）
+            val legacy = prefs.getString(KEY_URL, DEFAULT_URL)!!
+                .lines().map { it.trim() }.filter { it.isNotEmpty() }
+            return legacy.map { Source(it, "") }
+        }
+        set(v) = prefs.edit().putString(KEY_SOURCES, gson.toJson(v)).apply()
 
-    var fetchMode: FetchMode
-        get() = FetchMode.valueOf(prefs.getString(KEY_MODE, FetchMode.REDIRECT.name)!!)
-        set(v) = prefs.edit().putString(KEY_MODE, v.name).apply()
+    /** 从多行文本解析并保存图源（每行：URL 或 URL|JSON路径） */
+    fun saveSourcesFromText(text: String) {
+        val list = text.lines().map { it.trim() }.filter { it.isNotEmpty() }.map { line ->
+            val parts = line.split("|")
+            if (parts.size >= 2 && parts[1].trim().isNotEmpty()) {
+                Source(parts[0].trim(), parts[1].trim())
+            } else {
+                Source(line, "") // 302 直连
+            }
+        }
+        sources = list
+    }
 
-    /** JSON 路径，如 "data.url" 或 "data[0].url" */
-    var jsonPath: String
-        get() = prefs.getString(KEY_JSON_PATH, "data.url")!!
-        set(v) = prefs.edit().putString(KEY_JSON_PATH, v).apply()
+    /** 图源列表转为多行文本（用于界面回显） */
+    fun sourcesToText(): String =
+        sources.joinToString("\n") {
+            if (it.jsonPath.isEmpty()) it.url else "${it.url}|${it.jsonPath}"
+        }
+
+    /** 随机取一个图源 */
+    fun randomSource(): Source? = sources.randomOrNull()
 
     /** 上次成功切换的时间戳 */
     var lastAppliedAt: Long
@@ -71,10 +100,10 @@ class PrefsManager(context: Context) {
         get() = prefs.getBoolean(KEY_PERIODIC, false)
         set(v) = prefs.edit().putBoolean(KEY_PERIODIC, v).apply()
 
-    /** 定时更换周期（小时） */
-    var periodicHours: Long
-        get() = prefs.getLong(KEY_PERIODIC_HOURS, 6L)
-        set(v) = prefs.edit().putLong(KEY_PERIODIC_HOURS, v).apply()
+    /** 定时更换周期（分钟，WorkManager 最小 15 分钟） */
+    var periodicMinutes: Long
+        get() = prefs.getLong(KEY_PERIODIC_MINUTES, 360L)
+        set(v) = prefs.edit().putLong(KEY_PERIODIC_MINUTES, v.coerceAtLeast(15L)).apply()
 
     companion object {
         private const val NAME = "auto_wallpaper_prefs"
@@ -82,15 +111,14 @@ class PrefsManager(context: Context) {
 
         private const val KEY_ENABLED = "enabled"
         private const val KEY_INTERVAL = "min_interval"
-        private const val KEY_URL = "api_url"
-        private const val KEY_MODE = "fetch_mode"
-        private const val KEY_JSON_PATH = "json_path"
+        private const val KEY_URL = "api_url"                 // 旧版兼容
+        private const val KEY_SOURCES = "sources_json"
         private const val KEY_LAST_APPLIED = "last_applied"
         private const val KEY_LAST_URL = "last_url"
         private const val KEY_LOCK = "lock_screen"
         private const val KEY_UNLOCK_COUNT = "unlock_count"
         private const val KEY_LAST_UNLOCK = "last_unlock"
         private const val KEY_PERIODIC = "periodic_enabled"
-        private const val KEY_PERIODIC_HOURS = "periodic_hours"
+        private const val KEY_PERIODIC_MINUTES = "periodic_minutes"
     }
 }

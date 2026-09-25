@@ -2,8 +2,10 @@ package com.example.autowallpaper
 
 import android.app.WallpaperManager
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
+import android.util.DisplayMetrics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -33,7 +35,17 @@ object WallpaperApplier {
             val bitmap = BitmapFactory.decodeFile(file.absolutePath)
                 ?: return@withContext false
 
+            // 裁剪为屏幕比例并锁定壁纸尺寸为屏幕大小
+            // 避免左右滑动桌面时壁纸跟着滚动、显示不全
+            val dm: DisplayMetrics = context.resources.displayMetrics
+            val screenW = dm.widthPixels
+            val screenH = dm.heightPixels
+            val cropped = centerCrop(bitmap, screenW, screenH)
+
             try {
+                wm.desiredMinimumWidth = screenW
+                wm.desiredMinimumHeight = screenH
+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     // Android 7.0+：可以分别设置主屏和锁屏
                     val flags = if (lockScreen) {
@@ -41,15 +53,37 @@ object WallpaperApplier {
                     } else {
                         WallpaperManager.FLAG_SYSTEM
                     }
-                    wm.setBitmap(bitmap, null, true, flags)
+                    wm.setBitmap(cropped, null, true, flags)
                 } else {
                     // Android 7.0 以下：只能设主屏
-                    wm.setBitmap(bitmap)
+                    wm.setBitmap(cropped)
                 }
                 true
             } catch (_: SecurityException) {
                 // 极少量设备需要权限，一般不会
                 false
+            } finally {
+                if (cropped !== bitmap) cropped.recycle()
             }
         }
+
+    /**
+     * 按目标比例居中裁剪（不缩放，只裁掉多余部分）
+     */
+    private fun centerCrop(src: Bitmap, targetW: Int, targetH: Int): Bitmap {
+        val srcRatio = src.width.toFloat() / src.height
+        val dstRatio = targetW.toFloat() / targetH
+
+        return if (srcRatio > dstRatio) {
+            // 图片比目标更宽：裁左右
+            val newW = (src.height * dstRatio).toInt()
+            val x = (src.width - newW) / 2
+            Bitmap.createBitmap(src, x, 0, newW, src.height)
+        } else {
+            // 图片比目标更高：裁上下
+            val newH = (src.width / dstRatio).toInt()
+            val y = (src.height - newH) / 2
+            Bitmap.createBitmap(src, 0, y, src.width, newH)
+        }
+    }
 }

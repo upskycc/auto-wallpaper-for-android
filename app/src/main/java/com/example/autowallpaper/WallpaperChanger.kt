@@ -10,11 +10,11 @@ object WallpaperChanger {
 
     /**
      * 执行一次完整的换壁纸流程
+     * 开关判断由调用方负责（解锁接收器查 enabled，Worker 查 periodicEnabled）
      * @return 是否成功
      */
     suspend fun change(context: Context): Boolean {
         val prefs = PrefsManager(context)
-        if (!prefs.enabled) return false
 
         val imageUrl = WallpaperFetcher.fetchImageUrl(context, prefs) ?: return false
 

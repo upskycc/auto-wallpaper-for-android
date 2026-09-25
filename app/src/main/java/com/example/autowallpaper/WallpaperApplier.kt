@@ -43,8 +43,9 @@ object WallpaperApplier {
             val cropped = centerCrop(bitmap, screenW, screenH)
 
             try {
-                wm.desiredMinimumWidth = screenW
-                wm.desiredMinimumHeight = screenH
+                // 锁定期望尺寸为屏幕大小，避免桌面滑动时壁纸跟着滚动
+                @Suppress("DEPRECATION")
+                wm.suggestDesiredDimensions(screenW, screenH)
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     // Android 7.0+：可以分别设置主屏和锁屏

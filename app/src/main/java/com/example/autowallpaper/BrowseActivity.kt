@@ -84,6 +84,7 @@ class BrowseActivity : AppCompatActivity() {
             if (ok) {
                 prefs.lastImageUrl = url
                 prefs.lastAppliedAt = System.currentTimeMillis()
+                prefs.pendingChange = false
                 Toast.makeText(this@BrowseActivity, R.string.apply_ok, Toast.LENGTH_SHORT).show()
                 finish()
             } else {

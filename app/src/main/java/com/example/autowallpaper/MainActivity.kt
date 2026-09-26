@@ -164,6 +164,7 @@ class MainActivity : AppCompatActivity() {
                 if (ok) {
                     prefs.lastImageUrl = imageUrl
                     prefs.lastAppliedAt = System.currentTimeMillis()
+                    prefs.pendingChange = false
                     loadPrefsToUi()
                     Toast.makeText(this@MainActivity, R.string.apply_ok, Toast.LENGTH_SHORT).show()
                 } else {

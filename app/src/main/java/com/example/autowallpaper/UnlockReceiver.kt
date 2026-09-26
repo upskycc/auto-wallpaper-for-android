@@ -31,21 +31,33 @@ class UnlockReceiver : BroadcastReceiver() {
         val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         if (!pm.isInteractive) return
 
-        if (!prefs.enabled) return
-
-        // 最小间隔检查
-        val interval = prefs.minIntervalMs
-        if (interval > 0 && System.currentTimeMillis() - prefs.lastAppliedAt < interval) {
-            return
-        }
-
-        val pending = goAsync()
+        val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                // 优先级1：有等待更换（定时任务息屏时跳过的）→ 立即补换
+                // 独立于「解锁时更换」开关，也不受最小间隔限制
+                if (prefs.pendingChange) {
+                    prefs.pendingChange = false
+                    val ok = WallpaperChanger.change(context)
+                    if (ok) {
+                        prefs.nextRunAt = System.currentTimeMillis() + prefs.periodicMinutes * 60_000L
+                    }
+                    return@launch
+                }
+
+                // 优先级2：「解锁时更换」开关开启 → 每次解锁都换
+                if (!prefs.enabled) return@launch
+
+                // 最小间隔检查
+                val interval = prefs.minIntervalMs
+                if (interval > 0 && System.currentTimeMillis() - prefs.lastAppliedAt < interval) {
+                    return@launch
+                }
+
                 WallpaperChanger.change(context)
             } catch (_: Exception) {
             } finally {
-                pending.finish()
+                pendingResult.finish()
             }
         }
     }

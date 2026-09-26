@@ -110,6 +110,14 @@ class PrefsManager(context: Context) {
         get() = prefs.getLong(KEY_NEXT_RUN, 0L)
         set(v) = prefs.edit().putLong(KEY_NEXT_RUN, v).apply()
 
+    /**
+     * 等待更换标记：定时任务在息屏时被跳过后置位，
+     * 下次解锁时立即补换并清除（独立于「解锁时更换」开关）
+     */
+    var pendingChange: Boolean
+        get() = prefs.getBoolean(KEY_PENDING_CHANGE, false)
+        set(v) = prefs.edit().putBoolean(KEY_PENDING_CHANGE, v).apply()
+
     companion object {
         private const val NAME = "auto_wallpaper_prefs"
         private const val DEFAULT_URL = "https://wp.upx8.com/api.php?resolution={w}x{h}"
@@ -126,5 +134,6 @@ class PrefsManager(context: Context) {
         private const val KEY_PERIODIC = "periodic_enabled"
         private const val KEY_PERIODIC_MINUTES = "periodic_minutes"
         private const val KEY_NEXT_RUN = "next_run_at"
+        private const val KEY_PENDING_CHANGE = "pending_change"
     }
 }

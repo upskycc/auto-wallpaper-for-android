@@ -22,7 +22,9 @@ class WallpaperWorker(
         val pm = applicationContext.getSystemService(android.content.Context.POWER_SERVICE)
                 as android.os.PowerManager
         if (!pm.isInteractive) {
-            // 息屏跳过：下次尝试时间顺延一个周期
+            // 息屏跳过本次：置位等待标记，下次解锁时补换；
+            // 「预计下次切换」顺延一个周期
+            prefs.pendingChange = true
             prefs.nextRunAt = System.currentTimeMillis() + prefs.periodicMinutes * 60_000L
             return Result.success()
         }
@@ -31,6 +33,8 @@ class WallpaperWorker(
         if (ok) {
             // 更新预计下次执行时间（估算，系统调度可能延迟）
             prefs.nextRunAt = System.currentTimeMillis() + prefs.periodicMinutes * 60_000L
+            // 亮屏成功切换，清除等待标记
+            prefs.pendingChange = false
         }
         return if (ok) Result.success() else Result.failure()
     }

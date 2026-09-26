@@ -14,6 +14,9 @@
     <string name="json_path">JSON 路径</string>
     <string name="json_path_hint">如 data.url 或 data[0].url</string>
     <string name="last_applied">上次切换：</string>
+    <string name="next_applied">预计下次切换：</string>
+    <string name="next_applied_delayed">已到点，系统延迟中（息屏省电）</string>
+    <string name="periodic_disabled">定时已关闭</string>
     <string name="never">从未</string>
     <string name="unlock_info_fmt">解锁触发：%1$d 次，最近： %2$s</string>
     <string name="vivo_tip">提示：如果解锁不触发，请在系统设置中允许本应用「自启动」和「后台高耗电」权限（设置 → 电池 → 后台耗电管理 / i管家 → 应用启动管理）</string>

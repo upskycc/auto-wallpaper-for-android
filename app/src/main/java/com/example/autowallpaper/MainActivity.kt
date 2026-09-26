@@ -44,6 +44,16 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.never)
         }
 
+        // 预计下次切换时间展示
+        val next = prefs.nextRunAt
+        binding.tvNextApplied.text = when {
+            !prefs.periodicEnabled -> getString(R.string.periodic_disabled)
+            next <= 0 -> getString(R.string.never)
+            next <= System.currentTimeMillis() -> getString(R.string.next_applied_delayed)
+            else -> java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+                .format(java.util.Date(next))
+        }
+
         // 解锁触发诊断信息
         val unlockTime = if (prefs.lastUnlockAt > 0) {
             java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
@@ -63,15 +73,21 @@ class MainActivity : AppCompatActivity() {
 
     /** 调度 WorkManager 定时换壁纸（系统级调度，省电） */
     private fun schedulePeriodicWork() {
+        val minutes = prefs.periodicMinutes
         val request = androidx.work.PeriodicWorkRequestBuilder<WallpaperWorker>(
-            prefs.periodicMinutes, java.util.concurrent.TimeUnit.MINUTES
+            minutes, java.util.concurrent.TimeUnit.MINUTES
         ).build()
 
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+        val wm = WorkManager.getInstance(this)
+        // 先取消旧任务，保证周期从"现在"重新计时（UPDATE 会保留旧时间线，导致改周期不生效）
+        wm.cancelUniqueWork(WallpaperWorker.UNIQUE_WORK)
+        wm.enqueueUniquePeriodicWork(
             WallpaperWorker.UNIQUE_WORK,
-            androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
             request
         )
+        // 记录预计下次执行时间（估算，系统可能延迟）
+        prefs.nextRunAt = System.currentTimeMillis() + minutes * 60_000L
     }
 
     /** 保存输入框中的定时周期（分钟），并在开启定时的情况下重新调度 */

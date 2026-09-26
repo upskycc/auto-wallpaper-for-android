@@ -105,6 +105,11 @@ class PrefsManager(context: Context) {
         get() = prefs.getLong(KEY_PERIODIC_MINUTES, 360L)
         set(v) = prefs.edit().putLong(KEY_PERIODIC_MINUTES, v.coerceAtLeast(15L)).apply()
 
+    /** 预计下次定时切换时间（估算值，系统可能延迟） */
+    var nextRunAt: Long
+        get() = prefs.getLong(KEY_NEXT_RUN, 0L)
+        set(v) = prefs.edit().putLong(KEY_NEXT_RUN, v).apply()
+
     companion object {
         private const val NAME = "auto_wallpaper_prefs"
         private const val DEFAULT_URL = "https://wp.upx8.com/api.php?resolution={w}x{h}"
@@ -120,5 +125,6 @@ class PrefsManager(context: Context) {
         private const val KEY_LAST_UNLOCK = "last_unlock"
         private const val KEY_PERIODIC = "periodic_enabled"
         private const val KEY_PERIODIC_MINUTES = "periodic_minutes"
+        private const val KEY_NEXT_RUN = "next_run_at"
     }
 }

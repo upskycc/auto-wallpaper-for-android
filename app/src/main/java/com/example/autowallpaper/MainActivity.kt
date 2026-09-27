@@ -100,12 +100,12 @@ class MainActivity : AppCompatActivity() {
         ).build()
 
         val wm = WorkManager.getInstance(this)
-        // 原子操作：取消旧任务并重新入队，周期从"现在"重新计时
+        // REPLACE：取消旧任务并重新入队，周期从"现在"重新计时（与 2.10+ 的 CANCEL_AND_REENQUEUE 同义）
         // （不能 cancel + KEEP 分开调：两个异步操作有竞态，cancel 可能后执行把新任务也删掉，
         //   导致定时任务整体丢失、到点永远不执行）
         wm.enqueueUniquePeriodicWork(
             WallpaperWorker.UNIQUE_WORK,
-            androidx.work.ExistingPeriodicWorkPolicy.CANCEL_AND_RE_ENQUEUE,
+            androidx.work.ExistingPeriodicWorkPolicy.REPLACE,
             request
         )
         // 记录预计下次执行时间（估算，系统可能延迟）

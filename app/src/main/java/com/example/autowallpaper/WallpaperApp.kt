@@ -13,7 +13,6 @@ class WallpaperApp : Application() {
         super.onCreate()
         val receiver = UnlockReceiver()
         val filter = IntentFilter().apply {
-            addAction(android.content.Intent.ACTION_SCREEN_OFF)
             addAction(android.content.Intent.ACTION_USER_PRESENT)
         }
         registerReceiver(receiver, filter)

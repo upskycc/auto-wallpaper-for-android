@@ -10,13 +10,15 @@
     <string name="tile_label">换壁纸</string>
     <string name="api_url">壁纸图源（每行一个，随机选用）</string>
     <string name="api_url_hint">每行一个，302直连只填 URL；JSON接口填 URL|JSON路径，如 https://a.com/api|data.url</string>
-    <string name="fetch_mode">接口模式</string>
-    <string name="json_path">JSON 路径</string>
-    <string name="json_path_hint">如 data.url 或 data[0].url</string>
     <string name="last_applied">上次切换：</string>
     <string name="next_applied">预计下次切换：</string>
     <string name="next_applied_delayed">已到点，系统延迟中（息屏省电）</string>
     <string name="periodic_disabled">定时已关闭</string>
+    <string name="worker_never_run">定时任务从未运行，请点一次「保存设置」重新调度</string>
+    <string name="worker_run_fmt">定时任务上次运行：%1$s（%2$s）</string>
+    <string name="worker_skipped">息屏跳过，等待解锁补换</string>
+    <string name="worker_executed">已执行更换</string>
+    <string name="worker_failed">执行失败（网络或图源问题）</string>
     <string name="never">从未</string>
     <string name="unlock_info_fmt">解锁触发：%1$d 次，最近： %2$s</string>
     <string name="vivo_tip">提示：如果解锁不触发，请在系统设置中允许本应用「自启动」和「后台高耗电」权限（设置 → 电池 → 后台耗电管理 / i管家 → 应用启动管理）</string>
@@ -33,9 +35,4 @@
     <!-- Browse -->
     <string name="browse_title">选择壁纸</string>
 
-    <!-- Spinner entries -->
-    <string-array name="mode_entries">
-        <item>302 重定向 (直接返回图片)</item>
-        <item>返回 JSON，自行提取 URL</item>
-    </string-array>
 </resources>

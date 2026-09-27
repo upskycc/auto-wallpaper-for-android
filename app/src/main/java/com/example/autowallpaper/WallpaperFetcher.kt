@@ -12,7 +12,7 @@ import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit
 
 /**
- * 壁纸获取 + 下载 + 应用
+ * 壁纸获取 + 下载
  */
 object WallpaperFetcher {
 
@@ -68,7 +68,9 @@ object WallpaperFetcher {
 
     /**
      * 下载图片到缓存文件
-     * @return 缓存文件，下载失败返回 null
+     * 临时文件和最终文件都带时间戳唯一命名：多个触发源并发下载时互不干扰，
+     * 也不会写坏彼此的文件
+     * @return 下载好的缓存文件，失败返回 null
      */
     suspend fun downloadImage(imageUrl: String, context: Context): File? =
         withContext(Dispatchers.IO) {
@@ -77,36 +79,53 @@ object WallpaperFetcher {
                 if (!resp.isSuccessful) return@withContext null
                 val body = resp.body ?: return@withContext null
 
-                // 先下载到 .part，成功后重命名为 .jpg
                 val cacheDir = File(context.cacheDir, "wallpaper")
                 if (!cacheDir.exists()) cacheDir.mkdirs()
 
-                val partFile = File(cacheDir, "current.part")
-                val finalFile = File(cacheDir, "current.jpg")
+                // 唯一命名：并发下载不会互相覆盖
+                val stamp = System.currentTimeMillis()
+                val partFile = File(cacheDir, "wall_$stamp.part")
+                val finalFile = File(cacheDir, "current_$stamp.jpg")
 
-                FileOutputStream(partFile).use { fos ->
-                    body.byteStream().use { it.copyTo(fos) }
+                try {
+                    FileOutputStream(partFile).use { fos ->
+                        body.byteStream().use { it.copyTo(fos) }
+                    }
+
+                    // 验证是不是合法图片
+                    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    BitmapFactory.decodeFile(partFile.absolutePath, options)
+                    if (options.outWidth <= 0 || options.outHeight <= 0) {
+                        return@withContext null
+                    }
+
+                    // 改名失败（如存储满）时不能返回不存在的文件
+                    if (!partFile.renameTo(finalFile)) {
+                        return@withContext null
+                    }
+                    finalFile
+                } finally {
+                    // 改名成功后 partFile 已不存在；失败/异常时清掉残留
+                    if (partFile.exists()) partFile.delete()
                 }
-
-                // 验证是不是合法图片
-                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeFile(partFile.absolutePath, options)
-                if (options.outWidth <= 0 || options.outHeight <= 0) {
-                    partFile.delete()
-                    return@withContext null
-                }
-
-                if (finalFile.exists()) finalFile.delete()
-                partFile.renameTo(finalFile)
-                finalFile
             }
         }
 
     /**
-     * 清空缓存目录
+     * 清理缓存目录里除 keep 之外的旧壁纸（含旧版本遗留的 current.jpg / current.part），
+     * 只保留最近应用的一张；进行中的 wall_*.part 不受影响。
      */
-    fun clearCache(context: Context) {
-        val cacheDir = File(context.cacheDir, "wallpaper")
-        cacheDir.listFiles()?.forEach { it.delete() }
-    }
+    suspend fun cleanupOldWallpapers(context: Context, keep: File) =
+        withContext(Dispatchers.IO) {
+            val keepPath = keep.absolutePath
+            val cacheDir = File(context.cacheDir, "wallpaper")
+            cacheDir.listFiles()?.forEach { f ->
+                val name = f.name
+                val isCurrent = name.startsWith("current_") && name.endsWith(".jpg")
+                val isLegacy = name == "current.jpg" || name == "current.part"
+                if (f.isFile && (isCurrent || isLegacy) && f.absolutePath != keepPath) {
+                    f.delete()
+                }
+            }
+        }
 }

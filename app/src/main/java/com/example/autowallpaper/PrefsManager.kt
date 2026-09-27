@@ -51,13 +51,12 @@ class PrefsManager(context: Context) {
     /** 从多行文本解析并保存图源（每行：URL 或 URL|JSON路径） */
     fun saveSourcesFromText(text: String) {
         val list = text.lines().map { it.trim() }.filter { it.isNotEmpty() }.map { line ->
-            val parts = line.split("|")
-            if (parts.size >= 2 && parts[1].trim().isNotEmpty()) {
-                Source(parts[0].trim(), parts[1].trim())
-            } else {
-                Source(line, "") // 302 直连
-            }
-        }
+            // limit=2：URL 部分不切分，行尾多余竖线不会混进 URL
+            val parts = line.split("|", limit = 2)
+            val url = parts[0].trim()
+            val path = parts.getOrNull(1)?.trim().orEmpty()
+            if (path.isEmpty()) Source(url, "") else Source(url, path)
+        }.filter { it.url.isNotEmpty() }
         sources = list
     }
 
@@ -118,6 +117,21 @@ class PrefsManager(context: Context) {
         get() = prefs.getBoolean(KEY_PENDING_CHANGE, false)
         set(v) = prefs.edit().putBoolean(KEY_PENDING_CHANGE, v).apply()
 
+    /** 诊断：Worker 最近一次实际运行时间（0 = 从未运行） */
+    var lastWorkerRunAt: Long
+        get() = prefs.getLong(KEY_WORKER_RUN, 0L)
+        set(v) = prefs.edit().putLong(KEY_WORKER_RUN, v).apply()
+
+    /** 诊断：Worker 最近一次运行是否因息屏被跳过 */
+    var lastWorkerSkipped: Boolean
+        get() = prefs.getBoolean(KEY_WORKER_SKIPPED, false)
+        set(v) = prefs.edit().putBoolean(KEY_WORKER_SKIPPED, v).apply()
+
+    /** 诊断：Worker 最近一次亮屏执行是否成功更换 */
+    var lastWorkerOk: Boolean
+        get() = prefs.getBoolean(KEY_WORKER_OK, false)
+        set(v) = prefs.edit().putBoolean(KEY_WORKER_OK, v).apply()
+
     companion object {
         private const val NAME = "auto_wallpaper_prefs"
         private const val DEFAULT_URL = "https://wp.upx8.com/api.php?resolution={w}x{h}"
@@ -135,5 +149,8 @@ class PrefsManager(context: Context) {
         private const val KEY_PERIODIC_MINUTES = "periodic_minutes"
         private const val KEY_NEXT_RUN = "next_run_at"
         private const val KEY_PENDING_CHANGE = "pending_change"
+        private const val KEY_WORKER_RUN = "worker_run_at"
+        private const val KEY_WORKER_SKIPPED = "worker_skipped"
+        private const val KEY_WORKER_OK = "worker_ok"
     }
 }

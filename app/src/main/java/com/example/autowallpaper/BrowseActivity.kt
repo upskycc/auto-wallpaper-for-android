@@ -75,19 +75,25 @@ class BrowseActivity : AppCompatActivity() {
 
     private fun applyImage(url: String) {
         lifecycleScope.launch {
-            val file = WallpaperFetcher.downloadImage(url, this@BrowseActivity)
-            if (file == null) {
-                Toast.makeText(this@BrowseActivity, R.string.download_failed, Toast.LENGTH_SHORT).show()
-                return@launch
-            }
-            val ok = WallpaperApplier.applyFile(this@BrowseActivity, file, prefs.lockScreen)
-            if (ok) {
-                prefs.lastImageUrl = url
-                prefs.lastAppliedAt = System.currentTimeMillis()
-                prefs.pendingChange = false
-                Toast.makeText(this@BrowseActivity, R.string.apply_ok, Toast.LENGTH_SHORT).show()
-                finish()
-            } else {
+            try {
+                val file = WallpaperFetcher.downloadImage(url, this@BrowseActivity)
+                if (file == null) {
+                    Toast.makeText(this@BrowseActivity, R.string.download_failed, Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val ok = WallpaperApplier.applyFile(this@BrowseActivity, file, prefs.lockScreen)
+                if (ok) {
+                    prefs.lastImageUrl = url
+                    prefs.lastAppliedAt = System.currentTimeMillis()
+                    prefs.pendingChange = false
+                    // 清理旧缓存图，只保留刚应用的这一张
+                    WallpaperFetcher.cleanupOldWallpapers(this@BrowseActivity, file)
+                    Toast.makeText(this@BrowseActivity, R.string.apply_ok, Toast.LENGTH_SHORT).show()
+                    finish()
+                } else {
+                    Toast.makeText(this@BrowseActivity, R.string.apply_failed, Toast.LENGTH_SHORT).show()
+                }
+            } catch (_: Exception) {
                 Toast.makeText(this@BrowseActivity, R.string.apply_failed, Toast.LENGTH_SHORT).show()
             }
         }

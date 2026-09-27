@@ -102,6 +102,15 @@
             android:textSize="13sp"
             android:textColor="#666666" />
 
+        <!-- 定时任务诊断 -->
+        <TextView
+            android:id="@+id/tvWorkerInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textColor="#999999"
+            android:layout_marginTop="8dp" />
+
         <!-- 解锁触发诊断（用于确认广播是否到达） -->
         <TextView
             android:id="@+id/tvUnlockInfo"

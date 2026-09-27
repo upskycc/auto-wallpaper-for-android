@@ -22,11 +22,13 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = PrefsManager(this)
-        loadPrefsToUi()
+        loadInputs()
+        refreshDiagnostics()
         setupListeners()
     }
 
-    private fun loadPrefsToUi() {
+    /** 把已保存的配置回填到输入控件（仅 onCreate 调用，避免覆盖用户未保存的输入） */
+    private fun loadInputs() {
         binding.switchEnable.isChecked = prefs.enabled
         binding.switchLock.isChecked = prefs.lockScreen
         binding.switchPeriodic.isChecked = prefs.periodicEnabled
@@ -34,7 +36,10 @@ class MainActivity : AppCompatActivity() {
 
         // 定时周期回显（分钟）
         binding.etInterval.setText(prefs.periodicMinutes.toString())
+    }
 
+    /** 刷新诊断信息（时间/计数），不影响输入控件 */
+    private fun refreshDiagnostics() {
         // 上次切换时间展示
         val last = prefs.lastAppliedAt
         binding.tvLastApplied.text = if (last > 0) {
@@ -54,6 +59,22 @@ class MainActivity : AppCompatActivity() {
                 .format(java.util.Date(next))
         }
 
+        // 定时任务诊断信息
+        binding.tvWorkerInfo.text = if (!prefs.periodicEnabled) {
+            ""
+        } else if (prefs.lastWorkerRunAt <= 0) {
+            getString(R.string.worker_never_run)
+        } else {
+            val time = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+                .format(java.util.Date(prefs.lastWorkerRunAt))
+            val action = when {
+                prefs.lastWorkerSkipped -> getString(R.string.worker_skipped)
+                prefs.lastWorkerOk -> getString(R.string.worker_executed)
+                else -> getString(R.string.worker_failed)
+            }
+            String.format(java.util.Locale.getDefault(), getString(R.string.worker_run_fmt), time, action)
+        }
+
         // 解锁触发诊断信息
         val unlockTime = if (prefs.lastUnlockAt > 0) {
             java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
@@ -67,8 +88,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // 每次回到界面刷新诊断计数
-        loadPrefsToUi()
+        // 只刷新诊断信息，不覆盖输入框里未保存的修改
+        refreshDiagnostics()
     }
 
     /** 调度 WorkManager 定时换壁纸（系统级调度，省电） */
@@ -79,11 +100,12 @@ class MainActivity : AppCompatActivity() {
         ).build()
 
         val wm = WorkManager.getInstance(this)
-        // 先取消旧任务，保证周期从"现在"重新计时（UPDATE 会保留旧时间线，导致改周期不生效）
-        wm.cancelUniqueWork(WallpaperWorker.UNIQUE_WORK)
+        // 原子操作：取消旧任务并重新入队，周期从"现在"重新计时
+        // （不能 cancel + KEEP 分开调：两个异步操作有竞态，cancel 可能后执行把新任务也删掉，
+        //   导致定时任务整体丢失、到点永远不执行）
         wm.enqueueUniquePeriodicWork(
             WallpaperWorker.UNIQUE_WORK,
-            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            androidx.work.ExistingPeriodicWorkPolicy.CANCEL_AND_RE_ENQUEUE,
             request
         )
         // 记录预计下次执行时间（估算，系统可能延迟）
@@ -141,7 +163,7 @@ class MainActivity : AppCompatActivity() {
             binding.btnNow.isEnabled = false
             binding.btnNow.setText(R.string.loading)
         }
-        
+
         try {
             val imageUrl = WallpaperFetcher.fetchImageUrl(this, prefs)
             if (imageUrl == null) {
@@ -159,13 +181,18 @@ class MainActivity : AppCompatActivity() {
                 return
             }
 
+            // 手动触发：不做去重，强制下载
             val ok = WallpaperApplier.applyFile(this, file, prefs.lockScreen)
+            if (ok) {
+                // 清理旧缓存图，只保留刚应用的这一张
+                WallpaperFetcher.cleanupOldWallpapers(this, file)
+            }
             withContext(Dispatchers.Main) {
                 if (ok) {
                     prefs.lastImageUrl = imageUrl
                     prefs.lastAppliedAt = System.currentTimeMillis()
                     prefs.pendingChange = false
-                    loadPrefsToUi()
+                    refreshDiagnostics()
                     Toast.makeText(this@MainActivity, R.string.apply_ok, Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this@MainActivity, R.string.apply_failed, Toast.LENGTH_SHORT).show()

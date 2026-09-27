@@ -1,8 +1,6 @@
 package com.example.autowallpaper
 
-import com.google.gson.JsonArray
 import com.google.gson.JsonElement
-import com.google.gson.JsonObject
 
 /**
  * 简易 JSON Path 提取器
@@ -105,28 +103,5 @@ object JsonPathExtractor {
     private sealed class Token {
         data class Field(val name: String) : Token()
         data class Index(val index: Int) : Token()
-    }
-
-    // ========== 便捷方法：也可以从 JsonObject/JsonArray 直接取 ==========
-
-    /** 尝试在对象第一层的字段里找 URL（兼容 {data:"..."} 和直接是 URL 字符串） */
-    fun findUrlDirectly(obj: JsonObject): String? {
-        // 先看 data 字段
-        obj.get("data")?.let {
-            if (it.isJsonPrimitive) return it.asStringSafe()
-            if (it.isJsonObject) {
-                // 在 data 对象里找 url
-                it.asJsonObject.get("url")?.let { u -> return u.asStringSafe() }
-            }
-            if (it.isJsonArray && it.asJsonArray.size() > 0) {
-                val first = it.asJsonArray[0]
-                if (first.isJsonObject) {
-                    first.asJsonObject.get("url")?.let { u -> return u.asStringSafe() }
-                }
-            }
-        }
-        // 直接顶层 url
-        obj.get("url")?.let { return it.asStringSafe() }
-        return null
     }
 }

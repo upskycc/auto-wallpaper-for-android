@@ -32,15 +32,7 @@
             android:exported="false"
             android:label="@string/browse_title" />
 
-        <!-- 解锁广播接收器 -->
-        <receiver
-            android:name=".UnlockReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.SCREEN_OFF" />
-                <action android:name="android.intent.action.USER_PRESENT" />
-            </intent-filter>
-        </receiver>
+        <!-- 解锁接收器为动态注册（Android 8.0+ 静态注册收不到 USER_PRESENT），不在此声明 -->
 
         <!-- 下拉快捷开关磁贴 -->
         <service

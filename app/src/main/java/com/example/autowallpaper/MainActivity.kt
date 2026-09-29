@@ -90,6 +90,27 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         // 只刷新诊断信息，不覆盖输入框里未保存的修改
         refreshDiagnostics()
+        catchUpOverduePeriodic()
+    }
+
+    /**
+     * 打开 App 时发现定时任务已到点但系统还没执行（Doze/应用待机把后台任务推迟了）：
+     * 视为欠账，立即投递一次性任务补换。
+     * App 正在前台 → 系统会立刻执行，无需等待维护窗口。
+     */
+    private fun catchUpOverduePeriodic() {
+        if (!prefs.periodicEnabled) return
+        val next = prefs.nextRunAt
+        if (next > 0 && next <= System.currentTimeMillis()) {
+            // 复用解锁补换通道：置欠账标记，Worker 成功后会顺延预计时间
+            prefs.pendingChange = true
+            val request = androidx.work.OneTimeWorkRequestBuilder<OneTimeChangeWorker>().build()
+            androidx.work.WorkManager.getInstance(this).enqueueUniqueWork(
+                OneTimeChangeWorker.UNIQUE_WORK,
+                androidx.work.ExistingWorkPolicy.KEEP,
+                request
+            )
+        }
     }
 
     /** 调度 WorkManager 定时换壁纸（系统级调度，省电） */

@@ -24,6 +24,16 @@ object WallpaperFetcher {
         .build()
 
     /**
+     * 部分图床/接口（Cloudflare 等）会拦截 OkHttp 默认 UA 返回 403，
+     * 统一伪装成浏览器 UA
+     */
+    private const val UA =
+        "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+
+    private fun request(url: String): Request =
+        Request.Builder().url(url).header("User-Agent", UA).build()
+
+    /**
      * 根据随机选中的图源获取最终图片 URL
      * 图源自带模式：jsonPath 为空 = 302 直连；非空 = JSON 提取
      */
@@ -35,16 +45,14 @@ object WallpaperFetcher {
 
             if (source.jsonPath.isEmpty()) {
                 // 302 模式：OkHttp 跟随重定向后，response.request.url 就是最终图片地址
-                val req = Request.Builder().url(url).build()
-                client.newCall(req).execute().use { resp ->
+                client.newCall(request(url)).execute().use { resp ->
                     if (!resp.isSuccessful) return@withContext null
                     resp.body?.close() // 只需要 URL，不需要 body
                     resp.request.url.toString()
                 }
             } else {
                 // JSON 模式：用该图源自己的路径提取
-                val req = Request.Builder().url(url).build()
-                client.newCall(req).execute().use { resp ->
+                client.newCall(request(url)).execute().use { resp ->
                     if (!resp.isSuccessful) return@withContext null
                     val json = resp.body?.string() ?: return@withContext null
                     JsonPathExtractor.extract(json, source.jsonPath)
@@ -74,8 +82,7 @@ object WallpaperFetcher {
      */
     suspend fun downloadImage(imageUrl: String, context: Context): File? =
         withContext(Dispatchers.IO) {
-            val req = Request.Builder().url(imageUrl).build()
-            client.newCall(req).execute().use { resp ->
+            client.newCall(request(imageUrl)).execute().use { resp ->
                 if (!resp.isSuccessful) return@withContext null
                 val body = resp.body ?: return@withContext null
 

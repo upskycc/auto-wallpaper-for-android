@@ -76,15 +76,20 @@ class BrowseActivity : AppCompatActivity() {
     private fun applyImage(url: String) {
         lifecycleScope.launch {
             try {
-                val file = WallpaperFetcher.downloadImage(url, this@BrowseActivity)
+                val file = WallpaperFetcher.downloadImage(url, this@BrowseActivity, prefs)
                 if (file == null) {
-                    Toast.makeText(this@BrowseActivity, R.string.download_failed, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@BrowseActivity,
+                        getString(R.string.download_failed) + "\n" + prefs.lastFetchError,
+                        Toast.LENGTH_LONG
+                    ).show()
                     return@launch
                 }
                 val ok = WallpaperApplier.applyFile(this@BrowseActivity, file, prefs.lockScreen)
                 if (ok) {
                     prefs.lastImageUrl = url
                     prefs.lastAppliedAt = System.currentTimeMillis()
+                    prefs.lastFetchError = ""
                     prefs.pendingChange = false
                     // 清理旧缓存图，只保留刚应用的这一张
                     WallpaperFetcher.cleanupOldWallpapers(this@BrowseActivity, file)

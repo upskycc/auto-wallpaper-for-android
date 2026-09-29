@@ -84,6 +84,9 @@ class MainActivity : AppCompatActivity() {
         }
         binding.tvUnlockInfo.text =
             getString(R.string.unlock_info_fmt, prefs.unlockCount, unlockTime)
+
+        // 最近一次失败原因（成功后清空）
+        binding.tvFetchError.text = prefs.lastFetchError
     }
 
     override fun onResume() {
@@ -189,15 +192,25 @@ class MainActivity : AppCompatActivity() {
             val imageUrl = WallpaperFetcher.fetchImageUrl(this, prefs)
             if (imageUrl == null) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, R.string.fetch_failed, Toast.LENGTH_SHORT).show()
+                    refreshDiagnostics()
+                    Toast.makeText(
+                        this@MainActivity,
+                        getString(R.string.fetch_failed) + "\n" + prefs.lastFetchError,
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
                 return
             }
 
-            val file = WallpaperFetcher.downloadImage(imageUrl, this)
+            val file = WallpaperFetcher.downloadImage(imageUrl, this, prefs)
             if (file == null) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, R.string.download_failed, Toast.LENGTH_SHORT).show()
+                    refreshDiagnostics()
+                    Toast.makeText(
+                        this@MainActivity,
+                        getString(R.string.download_failed) + "\n" + prefs.lastFetchError,
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
                 return
             }
@@ -212,6 +225,7 @@ class MainActivity : AppCompatActivity() {
                 if (ok) {
                     prefs.lastImageUrl = imageUrl
                     prefs.lastAppliedAt = System.currentTimeMillis()
+                    prefs.lastFetchError = ""
                     prefs.pendingChange = false
                     refreshDiagnostics()
                     Toast.makeText(this@MainActivity, R.string.apply_ok, Toast.LENGTH_SHORT).show()

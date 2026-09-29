@@ -132,6 +132,11 @@ class PrefsManager(context: Context) {
         get() = prefs.getBoolean(KEY_WORKER_OK, false)
         set(v) = prefs.edit().putBoolean(KEY_WORKER_OK, v).apply()
 
+    /** 诊断：最近一次取图/下载失败的具体原因（空 = 无失败记录） */
+    var lastFetchError: String
+        get() = prefs.getString(KEY_LAST_FETCH_ERROR, "")!!
+        set(v) = prefs.edit().putString(KEY_LAST_FETCH_ERROR, v).apply()
+
     companion object {
         private const val NAME = "auto_wallpaper_prefs"
         private const val DEFAULT_URL = "https://wp.upx8.com/api.php?resolution={w}x{h}"
@@ -152,5 +157,6 @@ class PrefsManager(context: Context) {
         private const val KEY_WORKER_RUN = "worker_run_at"
         private const val KEY_WORKER_SKIPPED = "worker_skipped"
         private const val KEY_WORKER_OK = "worker_ok"
+        private const val KEY_LAST_FETCH_ERROR = "last_fetch_error"
     }
 }

@@ -120,6 +120,15 @@
             android:textSize="13sp"
             android:textColor="#666666" />
 
+        <!-- 最近一次失败原因（空 = 正常） -->
+        <TextView
+            android:id="@+id/tvFetchError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="13sp"
+            android:textColor="#CC0000" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

@@ -36,27 +36,50 @@ object WallpaperFetcher {
     /**
      * 根据随机选中的图源获取最终图片 URL
      * 图源自带模式：jsonPath 为空 = 302 直连；非空 = JSON 提取
+     * 失败原因会写入 prefs.lastFetchError 供诊断
      */
     suspend fun fetchImageUrl(context: Context, prefs: PrefsManager): String? =
         withContext(Dispatchers.IO) {
-            // 多图源：每次随机取一个
-            val source = prefs.randomSource() ?: return@withContext null
-            val url = resolveUrl(context, source.url)
+            try {
+                val source = prefs.randomSource()
+                if (source == null) {
+                    prefs.lastFetchError = "没有可用的图源（检查图源配置是否为空）"
+                    return@withContext null
+                }
+                val url = resolveUrl(context, source.url)
 
-            if (source.jsonPath.isEmpty()) {
-                // 302 模式：OkHttp 跟随重定向后，response.request.url 就是最终图片地址
-                client.newCall(request(url)).execute().use { resp ->
-                    if (!resp.isSuccessful) return@withContext null
-                    resp.body?.close() // 只需要 URL，不需要 body
-                    resp.request.url.toString()
+                if (source.jsonPath.isEmpty()) {
+                    // 302 模式：OkHttp 跟随重定向后，response.request.url 就是最终图片地址
+                    client.newCall(request(url)).execute().use { resp ->
+                        if (!resp.isSuccessful) {
+                            prefs.lastFetchError = "HTTP ${resp.code}（图源：${source.url.take(60)}…）"
+                            return@withContext null
+                        }
+                        resp.body?.close() // 只需要 URL，不需要 body
+                        resp.request.url.toString()
+                    }
+                } else {
+                    // JSON 模式：用该图源自己的路径提取
+                    client.newCall(request(url)).execute().use { resp ->
+                        if (!resp.isSuccessful) {
+                            prefs.lastFetchError = "HTTP ${resp.code}（图源：${source.url.take(60)}…）"
+                            return@withContext null
+                        }
+                        val json = resp.body?.string()
+                        if (json == null) {
+                            prefs.lastFetchError = "响应体为空"
+                            return@withContext null
+                        }
+                        val result = JsonPathExtractor.extract(json, source.jsonPath)
+                        if (result == null) {
+                            prefs.lastFetchError = "JSON 提取失败（路径 ${source.jsonPath}），响应开头：${json.take(120)}"
+                        }
+                        result
+                    }
                 }
-            } else {
-                // JSON 模式：用该图源自己的路径提取
-                client.newCall(request(url)).execute().use { resp ->
-                    if (!resp.isSuccessful) return@withContext null
-                    val json = resp.body?.string() ?: return@withContext null
-                    JsonPathExtractor.extract(json, source.jsonPath)
-                }
+            } catch (e: Exception) {
+                prefs.lastFetchError = "请求异常：${e.javaClass.simpleName}: ${e.message}"
+                null
             }
         }
 
@@ -78,12 +101,16 @@ object WallpaperFetcher {
      * 下载图片到缓存文件
      * 临时文件和最终文件都带时间戳唯一命名：多个触发源并发下载时互不干扰，
      * 也不会写坏彼此的文件
-     * @return 下载好的缓存文件，失败返回 null
+     * @return 下载好的缓存文件，失败返回 null（原因写入 prefs.lastFetchError）
      */
-    suspend fun downloadImage(imageUrl: String, context: Context): File? =
+    suspend fun downloadImage(imageUrl: String, context: Context, prefs: PrefsManager): File? =
         withContext(Dispatchers.IO) {
-            client.newCall(request(imageUrl)).execute().use { resp ->
-                if (!resp.isSuccessful) return@withContext null
+            try {
+                client.newCall(request(imageUrl)).execute().use { resp ->
+                if (!resp.isSuccessful) {
+                    prefs.lastFetchError = "下载失败 HTTP ${resp.code}"
+                    return@withContext null
+                }
                 val body = resp.body ?: return@withContext null
 
                 val cacheDir = File(context.cacheDir, "wallpaper")
@@ -103,11 +130,15 @@ object WallpaperFetcher {
                     val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                     BitmapFactory.decodeFile(partFile.absolutePath, options)
                     if (options.outWidth <= 0 || options.outHeight <= 0) {
+                        val mime = options.outMimeType ?: "未知格式"
+                        prefs.lastFetchError =
+                            "下载的内容无法解码为图片（$mime，可能是动态 WebP 或 HTML）"
                         return@withContext null
                     }
 
                     // 改名失败（如存储满）时不能返回不存在的文件
                     if (!partFile.renameTo(finalFile)) {
+                        prefs.lastFetchError = "缓存文件改名失败（存储空间不足？）"
                         return@withContext null
                     }
                     finalFile
@@ -115,6 +146,10 @@ object WallpaperFetcher {
                     // 改名成功后 partFile 已不存在；失败/异常时清掉残留
                     if (partFile.exists()) partFile.delete()
                 }
+                }
+            } catch (e: Exception) {
+                prefs.lastFetchError = "下载异常：${e.javaClass.simpleName}: ${e.message}"
+                null
             }
         }
 

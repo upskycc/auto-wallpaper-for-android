@@ -27,12 +27,13 @@ object WallpaperChanger {
             return true
         }
 
-        val file = WallpaperFetcher.downloadImage(imageUrl, context) ?: return false
+        val file = WallpaperFetcher.downloadImage(imageUrl, context, prefs) ?: return false
         val ok = WallpaperApplier.applyFile(context, file, prefs.lockScreen)
 
         if (ok) {
             prefs.lastImageUrl = imageUrl
             prefs.lastAppliedAt = System.currentTimeMillis()
+            prefs.lastFetchError = ""
             // 任何成功切换（定时/解锁/手动/磁贴/浏览）都清除等待更换标记
             prefs.pendingChange = false
             // 只保留刚应用的这一张，清理旧缓存图
